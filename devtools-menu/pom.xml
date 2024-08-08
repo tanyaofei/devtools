@@ -34,7 +34,7 @@
         <dependency>
             <groupId>com.github.hello09x.devtools</groupId>
             <artifactId>devtools-core</artifactId>
-            <version>0.1.2-SNAPSHOT</version>
+            <version>${revision}</version>
         </dependency>
 
     </dependencies>
