@@ -128,3 +128,5 @@ server-*/
 server/
 
 buildtool/
+
+**/.flattened-pom.xml
