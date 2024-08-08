@@ -38,9 +38,9 @@
         </dependency>
 
         <dependency>
-            <groupId>io.github.hello09x</groupId>
+            <groupId>com.github.hello09x.devtools</groupId>
             <artifactId>devtools-core</artifactId>
-            <version>${project.version}</version>
+            <version>${revision}</version>
         </dependency>
     </dependencies>
 
