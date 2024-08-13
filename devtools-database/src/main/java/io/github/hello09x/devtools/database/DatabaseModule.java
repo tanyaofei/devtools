@@ -4,10 +4,12 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.zaxxer.hikari.HikariDataSource;
+import io.github.hello09x.devtools.database.bukkit.DatasourceListener;
 import io.github.hello09x.devtools.database.config.DatasourceConfig;
 import io.github.hello09x.devtools.database.jdbc.JdbcTemplate;
 import io.github.hello09x.devtools.database.transaction.TransactionManager;
 import io.github.hello09x.devtools.database.transaction.TransactionTemplate;
+import org.bukkit.Bukkit;
 import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.NotNull;
 
@@ -21,12 +23,15 @@ public class DatabaseModule extends AbstractModule {
 
 
     public DatabaseModule() {
+
     }
 
-    @Provides
     @Singleton
-    private DataSource dataSource(@NotNull DatasourceConfig config) {
-        return new HikariDataSource(config.toHikariConfig());
+    @Provides
+    private DataSource dataSource(@NotNull Plugin plugin, @NotNull DatasourceConfig config) {
+        var datasource = new HikariDataSource(config.toHikariConfig());
+        Bukkit.getPluginManager().registerEvents(new DatasourceListener(plugin, datasource), plugin);
+        return datasource;
     }
 
     @Provides
@@ -34,7 +39,6 @@ public class DatabaseModule extends AbstractModule {
     private JdbcTemplate jdbcTemplate(@NotNull Plugin plugin, @NotNull DataSource dataSource) {
         return new JdbcTemplate(plugin, dataSource);
     }
-
 
     @Provides
     @Singleton

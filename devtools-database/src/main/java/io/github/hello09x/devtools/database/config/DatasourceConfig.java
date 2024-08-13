@@ -20,18 +20,39 @@ public class DatasourceConfig {
 
     public final static String CONFIG_SECTION = "datasource";
 
+    /**
+     * SQL 驱动类名
+     */
     private String driverClassName;
 
+    /**
+     * 数据库链接
+     */
     private String url;
 
+    /**
+     * 用户名
+     */
     private String username;
 
+    /**
+     * 密码
+     */
     private String password;
 
+    /**
+     * 最大连接数
+     */
     private int maxPoolSize = 1;
 
+    /**
+     * 连接超时时间
+     */
     private long connectionTimeout = 1000L;
 
+    /**
+     * 插件
+     */
     private final Plugin plugin;
 
     @Inject
