@@ -1,5 +1,6 @@
 package io.github.hello09x.devtools.core.config;
 
+import com.google.inject.Inject;
 import io.github.hello09x.devtools.core.event.ConfigReloadedEvent;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -25,47 +26,55 @@ public abstract class PluginConfig {
 
     private final Plugin plugin;
 
-    protected PluginConfig(@NotNull Plugin plugin, boolean reload) {
-        this.plugin = plugin;
-        if (reload) {
-            this.reload0();
-        }
-    }
-
     protected PluginConfig(@NotNull Plugin plugin) {
-        this(plugin, true);
+        this.plugin = plugin;
     }
 
     public void reload() {
-        this.reload0();
+        this.doReload();
         Bukkit.getServer().getPluginManager().callEvent(new ConfigReloadedEvent(this.plugin));
     }
 
-    protected void reload0() {
+    @Inject
+    protected void doReload() {
         var folder = this.plugin.getDataFolder();
         if (!folder.exists() && !folder.mkdirs()) {
             throw new IllegalStateException("Failed to create data folder for plugin: " + plugin.getName());
         }
 
-        var tmplFile = new File(this.plugin.getDataFolder(), "config.tmpl.yml");
-        try {
-            var jarConfig = plugin.getResource("config.yml");
-            if (jarConfig != null) {
-                IOUtil.copy(jarConfig, new FileOutputStream(tmplFile));
-            }
-        } catch (IOException e) {
-            throw new UncheckedIOException("Failed to write config template file: " + tmplFile.getAbsolutePath(), e);
+        // config.tmpl.config always update
+        var tmplFile = new File(folder, CONFIG_TMPL_FILE_NAME);
+        this.copyJarConfigFile(tmplFile);
+
+        // config.yml create if not exists
+        var configFile = new File(folder, CONFIG_FILE_NAME);
+        if (!configFile.exists()) {
+            this.copyJarConfigFile(configFile);
         }
 
         plugin.reloadConfig();
         this.reload(plugin.getConfig());
     }
 
-    public boolean isFileExists() {
-        return new File(this.plugin.getDataFolder(), "config.yml").exists();
+    public boolean isConfigFileExists() {
+        return new File(this.plugin.getDataFolder(), CONFIG_FILE_NAME).exists();
     }
 
-    public boolean isFileConfigurationOutOfDate() {
+    public boolean copyJarConfigFile(@NotNull File file) {
+        var jarFile = plugin.getResource(CONFIG_FILE_NAME);
+        if (jarFile == null) {
+            return false;
+        }
+
+        try (var out = new FileOutputStream(file)) {
+            IOUtil.copy(jarFile, out);
+            return true;
+        } catch (IOException e) {
+            throw new UncheckedIOException("Failed to generate " + file.getAbsolutePath(), e);
+        }
+    }
+
+    public boolean isConfigFileOutOfDate() {
         var version = Optional.ofNullable(plugin.getConfig().getDefaults()).map(def -> def.getString("version")).orElse(null);
         if (version == null) {
             return false;
