@@ -4,7 +4,6 @@ import io.github.hello09x.devtools.database.exception.DataAccessException;
 import io.github.hello09x.devtools.database.jdbc.extractor.RowMapperResultSetExtractor;
 import io.github.hello09x.devtools.database.jdbc.rowmapper.MapRowMapper;
 import org.bukkit.plugin.Plugin;
-import org.intellij.lang.annotations.Language;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.UnknownNullability;
@@ -45,7 +44,7 @@ public class JdbcTemplate {
         });
     }
 
-    public <T> @UnknownNullability T query(@NotNull String sql, @NotNull ResultSetExtractor<T> extractor, Object... args) {
+    public <T> @UnknownNullability T query(@NotNull String sql, @NotNull ResultSetExtractor<T> extractor, Object @NotNull... args) {
         return this.execute0(stm -> {
             var rs = stm.executeQuery();
             return extractor.extractData(rs);
@@ -65,7 +64,7 @@ public class JdbcTemplate {
         return JdbcUtils.nullableSingleResult(results);
     }
 
-    public <T> @Nullable T queryForObject(@NotNull String sql, @NotNull RowMapper<T> rowMapper, Object... args) {
+    public <T> @Nullable T queryForObject(@NotNull String sql, @NotNull RowMapper<T> rowMapper, Object @NotNull... args) {
         var results = this.query(sql, new RowMapperResultSetExtractor<>(rowMapper), args);
         return JdbcUtils.nullableSingleResult(results);
     }
@@ -75,7 +74,7 @@ public class JdbcTemplate {
         return JdbcUtils.nullableSingleResult(results);
     }
 
-    public @Nullable Map<String, Object> queryForMap(@NotNull String sql, Object... args) throws SQLException {
+    public @Nullable Map<String, Object> queryForMap(@NotNull String sql, Object @NotNull... args) throws SQLException {
         var results = query(sql, new RowMapperResultSetExtractor<>(new MapRowMapper()), args);
         return JdbcUtils.nullableSingleResult(results);
     }
@@ -96,26 +95,18 @@ public class JdbcTemplate {
         return execute0(PreparedStatement::executeUpdate, sql, args);
     }
 
-    public int update(@NotNull String sql, @NotNull KeyHolder keyHolder) {
-        return execute0(stm -> {
-            var rows = stm.executeUpdate(sql);
-            var generatedKeys = new RowMapperResultSetExtractor<>(new MapRowMapper()).extractData(stm.getGeneratedKeys());
-            if (generatedKeys != null) {
-                keyHolder.getKeyList().addAll(generatedKeys);
-            }
-            return rows;
-        });
-    }
-
     public int update(@NotNull String sql, @NotNull KeyHolder keyHolder, Object... args) {
-        return execute0(stm -> {
-            var rows = stm.executeUpdate();
-            var generatedKeys = new RowMapperResultSetExtractor<>(new MapRowMapper()).extractData(stm.getGeneratedKeys());
-            if (generatedKeys != null) {
-                keyHolder.getKeyList().addAll(generatedKeys);
-            }
-            return rows;
-        }, sql, args);
+        return execute0(con -> con.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS),
+                        stm -> {
+                            var rows = stm.executeUpdate();
+                            var generatedKeys = new RowMapperResultSetExtractor<>(new MapRowMapper()).extractData(stm.getGeneratedKeys());
+                            if (generatedKeys != null) {
+                                keyHolder.getKeyList().addAll(generatedKeys);
+                            }
+                            return rows;
+                        },
+                        args
+        );
     }
 
     private <T> @UnknownNullability T execute0(@NotNull SQLExchanger<Statement, T> execution) {
@@ -132,11 +123,11 @@ public class JdbcTemplate {
         }
     }
 
-    private <T> @UnknownNullability T execute0(@NotNull SQLExchanger<PreparedStatement, T> execution, @NotNull String sql, Object... args) {
+    private <T> @UnknownNullability T execute0(@NotNull PreparedStatementCreator preparedStatementCreator, @NotNull SQLExchanger<PreparedStatement, T> execution, Object @NotNull ... args) {
         var con = DataSourceUtils.getConnection(this.plugin, dataSource);
         PreparedStatement stm = null;
         try {
-            stm = con.prepareStatement(sql);
+            stm = preparedStatementCreator.createPreparedStatement(con);
             for (int i = 1; i <= args.length; i++) {
                 stm.setObject(i, args[i - 1]);
             }
@@ -147,6 +138,10 @@ public class JdbcTemplate {
             JdbcUtils.closeStatement(this.plugin, stm);
             DataSourceUtils.releaseConnection(this.plugin, con);
         }
+    }
+
+    private <T> @UnknownNullability T execute0(@NotNull SQLExchanger<PreparedStatement, T> execution, @NotNull String sql, Object @NotNull ... args) {
+        return execute0(con -> con.prepareStatement(sql), execution, args);
     }
 
 }

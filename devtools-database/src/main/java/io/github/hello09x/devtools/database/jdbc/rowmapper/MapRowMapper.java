@@ -22,8 +22,8 @@ public class MapRowMapper implements RowMapper<Map<String, Object>> {
         int columnCount = md.getColumnCount();
         var result = new LinkedHashMap<String, Object>();
         for (int i = 0; i < columnCount; i++) {
-            var column = md.getColumnClassName(i);
-            result.put(JdbcUtils.lookupColumnName(md, i), rs.getObject(column));
+            var column = md.getColumnName(i + 1);
+            result.put(JdbcUtils.lookupColumnName(md, i + 1), rs.getObject(column));
         }
         return result;
     }

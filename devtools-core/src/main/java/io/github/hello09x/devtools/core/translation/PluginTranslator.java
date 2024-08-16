@@ -90,9 +90,7 @@ public class PluginTranslator implements Translator {
                 if (this.loadedLocales.contains(bundle.getLocale())) {
                     return;
                 }
-                var resultLocale = bundle.getLocale();
-                registry.registerAll(resultLocale, bundle, false);
-                this.loadedLocales.add(resultLocale);
+                registry.registerAll(locale, bundle, false);
                 return;
             }
         } finally {
