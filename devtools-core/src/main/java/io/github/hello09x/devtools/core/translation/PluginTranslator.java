@@ -62,16 +62,16 @@ public class PluginTranslator implements Translator {
 
     @Override
     public @Nullable MessageFormat translate(@NotNull String key, @Nullable Locale locale) {
-        return registry.translate(key, locale == null ? config.defaultLocale() : locale);
-    }
-
-    @Override
-    public @NotNull Component translate(@NotNull TranslatableComponent component, @Nullable Locale locale) {
         if (locale == null) {
             locale = config.defaultLocale();
         }
         this.loadLocaleLazily(locale);
-        return renderer.render(component, locale);
+        return registry.translate(key, locale);
+    }
+
+    @Override
+    public @Nullable Component translate(@NotNull TranslatableComponent component, @Nullable Locale locale) {
+        return null;
     }
 
     private void loadLocaleLazily(@NotNull Locale locale) {

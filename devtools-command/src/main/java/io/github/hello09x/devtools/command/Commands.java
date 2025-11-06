@@ -3,12 +3,16 @@ package io.github.hello09x.devtools.command;
 import dev.jorel.commandapi.CommandAPICommand;
 import dev.jorel.commandapi.CommandTree;
 import dev.jorel.commandapi.arguments.*;
+import org.bukkit.Bukkit;
+import org.bukkit.OfflinePlayer;
+import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 
 /**
@@ -145,20 +149,38 @@ public class Commands {
         return new TextArgument(name);
     }
 
-    public static @NotNull PlayerArgument player(@NotNull String name) {
-        return new PlayerArgument(name);
+    public static @NotNull PlayerProfileArgument playerProfile(@NotNull String name) {
+        return new PlayerProfileArgument(name);
     }
 
-    public static @NotNull OfflinePlayerArgument offlinePlayer(@NotNull String name) {
-        return new OfflinePlayerArgument(name);
+    public static @NotNull EntitySelectorArgument.OnePlayer player(@NotNull String name) {
+        return new EntitySelectorArgument.OnePlayer(name);
+    }
+
+    public static @NotNull Argument<OfflinePlayer> offlinePlayer(@NotNull String name) {
+        return new CustomArgument<>(new StringArgument(name), info -> {
+            var playerName = info.currentInput();
+            OfflinePlayer player = Bukkit.getPlayerExact(playerName);
+            if (player == null) {
+                try {
+                    player = Bukkit.getOfflinePlayer(playerName);
+                } catch (Exception e) {
+                    throw CustomArgument.CustomArgumentException.fromString("Player not found: " + playerName);
+                }
+            }
+            return player;
+        }).replaceSuggestions(ArgumentSuggestions.strings(info -> {
+            var input = info.currentArg().toLowerCase(Locale.ENGLISH);
+            return Bukkit.getOnlinePlayers()
+                         .stream()
+                         .map(Player::getName)
+                         .filter(n -> n.toLowerCase(Locale.ENGLISH).startsWith(input))
+                         .toArray(String[]::new);
+        }));
     }
 
     public static @NotNull UUIDArgument uuid(@NotNull String name) {
         return new UUIDArgument(name);
-    }
-
-    public static @NotNull FloatRangeArgument floatRange(@NotNull String nodeName) {
-        return new FloatRangeArgument(nodeName);
     }
 
     public static @NotNull IntegerRangeArgument integerRange(@NotNull String name) {
